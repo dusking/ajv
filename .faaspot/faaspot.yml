@@ -1,0 +1,18 @@
+
+logo: 'https://www.themoviedb.org/assets/static_cache/2dceae11589334eecd61443249261daf/images/v4/logos/208x226-stacked-green.png'
+
+functions:
+    getinfo:
+        runtime: nodejs8.3
+        handler: handler.main
+        description: validate schema
+        memory: 128
+        timeout: 30                
+        properties:            
+            schema:
+                description: The schema to validate                
+                type: string  
+                required: true              
+                minLength: 1                
+                maxLength: 1024
+            
