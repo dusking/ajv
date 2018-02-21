@@ -1,13 +1,15 @@
+# timeout should be a multiple of 30 and maximum of 300
+
 
 logo: 'https://www.themoviedb.org/assets/static_cache/2dceae11589334eecd61443249261daf/images/v4/logos/208x226-stacked-green.png'
 
 functions:
-    getinfo:
+    validateSchema:
         runtime: nodejs8.3
-        handler: handler.main
+        handler: wrapper.main
         description: validate schema
-        memory: 128
-        timeout: 30                
+        memory: 256
+        timeout: 30                 
         properties:            
             schema:
                 description: The schema to validate                
@@ -15,4 +17,28 @@ functions:
                 required: true              
                 minLength: 1                
                 maxLength: 1024
+    validate:
+        runtime: nodejs8.3
+        handler: wrapper.main
+        description: validate schema
+        memory: 256
+        timeout: 30                
+        properties:            
+            schema:
+                description: The schema
+                type: string  
+                required: true              
+                minLength: 1                
+                maxLength: 1024
+            data:
+                description: The data to validate                
+                type: string  
+                required: true              
+                minLength: 1                
+                maxLength: 1024
+        # oneOf:
+        #     - required:
+        #         jsonschema
+        #     - required:
+        #         yamlschema
             
