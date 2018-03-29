@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "querystring": "^0.2.0",
+    "redis": "^2.8.0",
     "request": "^2.85.0"
   }
 }

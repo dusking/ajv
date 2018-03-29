@@ -146,7 +146,7 @@ module.exports.main = function main(event, context, callback) {
     console.log('>>>>>>>>>>>>>>> ' + typeof event.body)
 
     if (event.body && event.body.indexOf('&') > -1 ) {
-        console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa');
+        console.log('data is not a json, but a query string parameters');
         // req.body = JSON.parse(data);
         // convert body into json
         querystring.parse(event.body);

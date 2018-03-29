@@ -16,7 +16,7 @@ function getJson(jsonObj) {
 function getYaml(yamlObj) {
     if (typeof yamlObj === 'object') {
         return yamlObj
-    } else {
+    } else {        
         return yamlValidator.safeLoad(yamlObj) ? YAML.parse(yamlObj) : null;
     } 
 }
@@ -26,14 +26,25 @@ function getSchemaData(body) {
         var status = '';
         var schema = body.schema;
         var data = body.data;
+        var schema_json_str = false;
+        
+        if (!schema) {
+            status = 'validate input';
+            throw {message: "missing schema"}
+        }
+        if (!data) {
+            status = 'validate input';
+            throw {message: "missing data"}
+        }
 
         if (typeof schema === "object" ) {            
             schema = JSON.stringify(schema)                         
         } 
         schema = schema.trim();        
-        if (schema[0] == "{") {        
+        if (schema[0] == "{") {      
+            schema_json_str = true;  
             status = 'input json schema';            
-            schema = getJson(schema);
+            schema = getJson(schema);            
         } else {
             status = 'input yaml schema';              
             schema = getYaml(chema)                 
@@ -44,15 +55,19 @@ function getSchemaData(body) {
                 data = JSON.stringify(data)                  
             } 
             data = data.trim();        
-            if (data[0] == "{") {
+            if (data[0] == "{") {                
                 status = 'input json data';
                 data = getJson(data);
-            } else {
+            } else {                
+                if (schema_json_str) {
+                    // throw {message:"when schmea input is a json, need to use json data"}
+                    throw {message: "invalid json data"}
+                }
                 status = 'input yaml data';              
-                data = getYaml(data)                 
-            }
+                data = getYaml(data);                
+            }      
         }          
-    }  catch (err) {        
+    }  catch (err) {                
         return {error: `${status} - ${err.message}`}
     }    
     
@@ -113,9 +128,28 @@ function getAvjObj(version) {
           // Optionally you can also disable propertyNames keyword defined in draft-06
           ajv.removeKeyword('propertyNames');
     } else {
+        console.log('using latest schema');
         var ajv = new Ajv(options);
     }
     return ajv;
+}
+
+function normaliseErrorMessages(errors) {
+    var fields = errors.reduce(
+        function (acc, e) {
+            var key = (e.dataPath.length == 0) ? e.keyword : e.dataPath.slice(1)            
+            if (key in acc) {
+                acc[key].push(e.message.toUpperCase()[0] + e.message.slice(1));
+            }
+            else {
+                acc[key] = [e.message.toUpperCase()[0] + e.message.slice(1)];
+            }            
+            return acc;
+        },
+        {}
+    );
+
+    return fields;
 }
 
 module.exports.validate = function validate(event, context) { 
@@ -143,17 +177,19 @@ module.exports.validate = function validate(event, context) {
     var ajv = getAvjObj(version);
     var response = '';
     try {        
-
         // maybe if no data - just: ajv.validateSchema(schema)
         // var validator = ajv.getSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
         // console.log(`${typeof validator}`)
         var validator = ajv.compile(schema);        
     
         // if data wasn't supplied and schema compiled without exceptions - it's enougth (check the schema iteself)        
-        var valid = data ? validator(data) : true;
+        // var valid = data ? validator(data) : true;
+        var valid = validator(data);
 
         if (!valid) {
-            var normalisedErrors = normalise(validator.errors);
+            console.log(validator.errors)
+            // var normalisedErrors = normalise(validator.errors);
+            var normalisedErrors = normaliseErrorMessages(validator.errors);
             response = 'Invalid. errors: ' + JSON.stringify(normalisedErrors);                        
         } else {            
             response = 'Validated';

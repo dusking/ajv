@@ -16,8 +16,7 @@ var yamldata = `
 foo: abc
 bar: 3
 `;
-var jsonschema = '{"required": ["foo", "bar"], "properties":{"foo":{"type":"string"}, "bar":{"type":"number","maximum":3}}}';
-var jsondata = '{ "foo": "abc", "bar": 3 }';
+
 
 
 // "$schema": "http://json-schema.org/draft-04/schema#",
@@ -181,9 +180,16 @@ var dataInvalid5 = `{
     }
   }`
 
+var jsonschema = '{"required": ["foo", "bar"], "properties":{"foo":{"type":"string"}, "bar":{"type":"number","maximum":3}}}';
+// var jsonschema = ''
+var jsondata = '{ "foo": "abc", "bar": 3 }';
+var jsondata = '{ "bar": "3" }';
+// var jsondata = '';
+// var jsondata = 'dd';
+
 var body = JSON.stringify({
-    'schema': yamlschema,
-    'data': yamldata,
+    'schema': jsonschema,
+    'data': jsondata,
     'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
 });
 var headers = {
@@ -195,4 +201,4 @@ function foo(a, b) {
 }
 
 
-validateModule.main(event, {}, foo)
+validateModule.validate(event, {}, foo)
