@@ -201,4 +201,37 @@ function foo(a, b) {
 }
 
 
-validateModule.validate(event, {}, foo)
+// validateModule.validate(event, {}, foo)
+
+
+
+// const request = require('request');
+// function retrieveUserMail(github_token) {
+// 	request({
+// 		uri: `https://api.github.com/user/emails`,
+// 		method: 'GET',
+// 		headers: { 'Authorization': `token ${github_token}`, 'User-Agent': 'curl/7.35.0'}
+// 	}, (err, response, body) => {
+// 		try {
+// 			console.log('result: ' + body)
+// 			console.log('response: ' + JSON.stringify(response))
+// 			console.log('err: ' + err)
+// 		} catch (e) {
+// 			console.log('exception: ' + e)
+// 		}
+// 	})
+// }
+// token = "fe9bc3796aceb7be61cc295c5945cd5e3997ca7a"
+// retrieveUserMail(token)
+
+emails = [{"email":"dusking@gmail.com","primary":true,"verified":true,"visibility":"private"},{"email":"dusking@users.noreply.github.com","primary":false,"verified":true,"visibility":null},{"email":"omerd@gigaspaces.com","primary":false,"verified":true,"visibility":null}]
+
+uidgenerator = require('uid-generator')
+const uidgen = new uidgenerator(null, uidgenerator.BASE62, 7);
+const uid = uidgen.generateSync();
+var token = Buffer('1234567' + ":" + uid).toString("base64");
+console.log(token)
+console.log(`created token: ${token}`);
+token = encrypt(token);
+//console.log(`created encrypted token: ${token}`);
+// return token

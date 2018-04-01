@@ -89,6 +89,39 @@ function authenticateUser(event, context) {
     });
 }
 
+function createDocKey(context, userId) {
+	// Spotinst Credentials
+	var account = 'act-5078b4ed'
+	var token = '7b1e4e8d0916fd2a104acd92e37867977868b3cc674e9174871f02fb3476e6f2'
+	var environment = context['environmentId']
+	var key = userId
+	
+    var putOptions = {
+		uri:'https://api.spotinst.io/functions/environment/'+environment+'/userDocument',
+		method: "POST",
+		qs: {accountId: account},
+		headers: {
+			"Content-Type": "application/json",
+			"Authorization": "Bearer " + token},	
+		body: {
+			"userDocument": {
+                "key": key,
+				"value": String(0)}
+		},
+		json:true
+	}
+
+    return new Promise(function (resolve, reject) {
+        rp(putOptions).then((res)=>{
+            console.log(res['response'])
+            resolve({'userId': key, 'counter': '0'});         
+        }).catch((err)=>{
+            console.log('FAILED: ' + err);
+            reject(Error("Failed creating document, Access denied"));
+        })        
+    });
+};
+
 function updateDocKey(context, userEntity) {
 	// Spotinst Credentials
 	var account = 'act-5078b4ed'
@@ -126,13 +159,12 @@ function getDocValue(context, userTokenInfo) {
         var key = userTokenInfo['userId'].replace('-','')
         console.log('getDocValue ' + key);
         context.getDoc(key, function(err, res) {
-            console.log('aaaa ' + res);
-            console.log('bbbb ' + err);
-
             if (res) {
                 resolve({'userId': key, 'counter': res});
             } else {
-                reject(Error("It broke"));
+                console.log('Missing in document store: ' + key)
+                return createDocKey(context, key);
+                // reject(Error("It broke"));
             }
         })
     })    
