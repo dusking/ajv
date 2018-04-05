@@ -5,10 +5,13 @@ const rp = require('request-promise')
 var Ajv = require('ajv');
 var normalise = require('ajv-error-messages');
 const querystring = require('querystring');
+const moment = require('moment');
 
 var validateModule = require("./validate.js");
 
-function validateInput(body) {    
+function validateInput(body) {  
+    console.log('Going to validate input..')
+
     var schema = {
         'required': ['schema', 'data'], 
         'properties': {
@@ -89,14 +92,17 @@ function authenticateUser(event, context) {
     });
 }
 
-function createDocKey(context, userId) {
-	// Spotinst Credentials
+function createDocKeyIfNeeded(userEntity, context) {
+    // Spotinst Credentials
+    var userId = userEntity.userId
 	var account = 'act-5078b4ed'
 	var token = '7b1e4e8d0916fd2a104acd92e37867977868b3cc674e9174871f02fb3476e6f2'
 	var environment = context['environmentId']
-	var key = userId
-	
-    var putOptions = {
+    var key = userId
+    var currentDate = moment(new Date()).format("YYYY-MM-DD");    
+    var UserCounter = {start: currentDate, counter: 0};        
+    
+    var reqOptions = {
 		uri:'https://api.spotinst.io/functions/environment/'+environment+'/userDocument',
 		method: "POST",
 		qs: {accountId: account},
@@ -104,32 +110,40 @@ function createDocKey(context, userId) {
 			"Content-Type": "application/json",
 			"Authorization": "Bearer " + token},	
 		body: {
-			"userDocument": {
-                "key": key,
-				"value": String(0)}
+			"userDocument": {"key": key, "value": JSON.stringify(UserCounter)}
 		},
 		json:true
 	}
 
-    return new Promise(function (resolve, reject) {
-        rp(putOptions).then((res)=>{
-            console.log(res['response'])
-            resolve({'userId': key, 'counter': '0'});         
-        }).catch((err)=>{
-            console.log('FAILED: ' + err);
-            reject(Error("Failed creating document, Access denied"));
-        })        
+    return new Promise(function (resolve, reject) {        
+        if ('counter' in userEntity) {
+            console.log('no need to create doc')    
+            resolve(userEntity);         
+        }
+        else {
+            console.log(`Going to create doc key: ${key} on: ${environment} with value: ${JSON.stringify(UserCounter)}`)            
+            rp(reqOptions).then((res)=>{        
+                console.log('doc key been created')    
+                resolve({'userId': key, 'start': currentDate, 'counter': 0, 'elapsed': 0});         
+            }).catch(err => {
+                console.log('FAILED TO CREATE DOCUMENT: ' + err);
+                reject(Error("Failed creating document, Access denied"));
+            })   
+        }             
     });
 };
 
 function updateDocKey(context, userEntity) {
+    console.log('going to update key..')
+
 	// Spotinst Credentials
 	var account = 'act-5078b4ed'
 	var token = '7b1e4e8d0916fd2a104acd92e37867977868b3cc674e9174871f02fb3476e6f2'
 	var environment = context['environmentId']
-	var key = userEntity['userId']
+    var key = userEntity['userId']  
+    var UserCounter = {start: userEntity['start'], counter: parseInt(userEntity['counter']) + 1};  
 	
-    var putOptions = {
+    var reqOptions = {
 		uri:'https://api.spotinst.io/functions/environment/'+environment+'/userDocument/'+key,
 		method: "PUT",
 		qs: {accountId: account},
@@ -137,15 +151,15 @@ function updateDocKey(context, userEntity) {
 			"Content-Type": "application/json",
 			"Authorization": "Bearer " + token},	
 		body: {
-			"userDocument": {
-				"value": String(parseInt(userEntity['counter']) + 1)}
+			"userDocument": {"value": JSON.stringify(UserCounter)}
 		},
 		json:true
 	}
 
     return new Promise(function (resolve, reject) {
-        rp(putOptions).then((res)=>{
-            console.log(res['response'])
+        console.log(`Going to update doc key: ${key} with value: ${JSON.stringify(UserCounter)}`)        
+        rp(reqOptions).then((res)=>{            
+            console.log('key updated')
             resolve({value: true});         
         }).catch((err)=>{
             console.log('FAILED: ' + err);
@@ -155,16 +169,32 @@ function updateDocKey(context, userEntity) {
 };
 
 function getDocValue(context, userTokenInfo) {
+    // returns the user document
+    // create it if not exists..
     return new Promise(function (resolve, reject) {
         var key = userTokenInfo['userId'].replace('-','')
-        console.log('getDocValue ' + key);
+
+        // var randomNum = Math.floor((Math.random() * 100000) + 1);
+        // key = `${key}XX${randomNum}`
+
+        console.log('goint to retrieve key: ' + key);
         context.getDoc(key, function(err, res) {
             if (res) {
-                resolve({'userId': key, 'counter': res});
+                console.log('got doc key: ' + res)
+                UserCounter = JSON.parse(res)                
+                var startDate = moment(new Date(UserCounter.start)).format("YYYY-MM-DD");
+                var currentDate = moment(new Date()).format("YYYY-MM-DD");
+                var eladpsedDays = moment(currentDate).diff(startDate, 'days');
+                resolve({'userId': key, 'start': UserCounter.start, 'counter': UserCounter.counter, 'elapsed': eladpsedDays});
             } else {
                 console.log('Missing in document store: ' + key)
-                return createDocKey(context, key);
-                // reject(Error("It broke"));
+                resolve({'userId': key})
+                // return createDocKey(context, key);
+                // createDocKey(context, key).then(result => {
+                //     resolve(result)
+                // }).catch(err => {
+                //     reject(err)
+                // })
             }
         })
     })    
@@ -173,29 +203,25 @@ function getDocValue(context, userTokenInfo) {
 module.exports.main = function main(event, context, callback) {   
     console.log('event: ' + JSON.stringify(event))     
     console.log('context: ' + JSON.stringify(context))     
-  
     console.log('body: ' + event.body)
-    console.log('>>>>>>>>>>>>>>> ' + typeof event.body)
 
-    if (event.body && event.body.indexOf('&') > -1 ) {
+    var client_ip = event['headers']['X-Forwarded-For'];
+
+    var jsonBody = event.body && event.body.trim()[0] == "{";
+    if (!jsonBody) {
         console.log('data is not a json, but a query string parameters');
-        // req.body = JSON.parse(data);
         // convert body into json
         querystring.parse(event.body);
         var parsedQueryBody = querystring.parse(event.body)
         event.body = JSON.stringify(parsedQueryBody)
         console.log('event.body: ' + event.body)     
+    } else {
+        console.log('data is a json: ' + event.body)     
     }
-    // if(str.indexOf(substr) > -1) {
-    //     // convert body into json
-    //     querystring.parse(event.body);
-    //     var parsedQueryBody = querystring.parse(event.body)
-    //     event.body = JSON.stringify(parsedQueryBody)
-    //     console.log('event.body: ' + event.body)     
-    // }
 
     authenticateUser(event, context)
     .then(userTokenInfo => getDocValue(context, userTokenInfo))    
+    .then(userEntity => createDocKeyIfNeeded(userEntity, context))
     .then(userEntity => updateDocKey(context, userEntity))
     .then(results => validateInput(event.body))  
     .then(inputValidation => {  
@@ -219,14 +245,3 @@ module.exports.main = function main(event, context, callback) {
         });
     })    
 }
-
-
-
-// var algorithm = 'aes256'; // or any other algorithm supported by OpenSSL
-// var key = '00000000000000000000000000000000';
-// var iv = '0000000000000000';
-// var text = 'this-needs-to-be-encrypted';
-
-// var cipher = crypto.createCipheriv(algorithm, key, iv);  
-// var encrypted = cipher.update(text, 'utf8', 'hex') + cipher.final('hex');
-// console.log('encrypted', encrypted, encrypted.length)

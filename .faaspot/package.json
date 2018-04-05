@@ -1,17 +1,17 @@
 {
   "dependencies": {
+    "@google-cloud/datastore": "^1.4.0",
     "ajv-error-messages": "^1.0.0",
     "assert": "^1.4.1",
     "basic-auth": "^2.0.0",
     "bluebird": "^3.5.1",
     "crypto": "^1.0.1",
-    "dotenv": "^5.0.1",
     "js-yaml": "^3.10.0",
     "jsonlint": "^1.6.2",
+    "moment": "^2.22.0",
     "querystring": "^0.2.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
-    "yamljs": "^0.3.0",
-    "uid-generator": "^1.0.0"
+    "yamljs": "^0.3.0"
   }
 }
