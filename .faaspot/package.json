@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "@google-cloud/datastore": "^1.4.0",
-    "ajv-error-messages": "^1.0.0",
     "assert": "^1.4.1",
     "basic-auth": "^2.0.0",
     "bluebird": "^3.5.1",

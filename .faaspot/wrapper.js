@@ -3,11 +3,30 @@ var basicAuth = require('basic-auth')
 var assert = require('assert');
 const rp = require('request-promise')
 var Ajv = require('ajv');
-var normalise = require('ajv-error-messages');
+// var normalise = require('ajv-error-messages');
 const querystring = require('querystring');
 const moment = require('moment');
 
 var validateModule = require("./validate.js");
+
+function normaliseErrorMessages(errors) {
+    var fields = errors.reduce(
+        function (acc, e) {
+            var key = (e.dataPath.length == 0) ? e.keyword : e.dataPath.slice(1)            
+            if (key in acc) {
+                acc[key].push(e.message.toUpperCase()[0] + e.message.slice(1));
+            }
+            else {
+                acc[key] = [e.message.toUpperCase()[0] + e.message.slice(1)];
+            }            
+            return acc;
+        },
+        {}
+    );
+
+    return fields;
+}
+
 
 function validateInput(body) {  
     console.log('Going to validate input..')
@@ -31,23 +50,19 @@ function validateInput(body) {
     var data = JSON.parse(body);
 
     return new Promise(function (resolve, reject) {        
-        try {               
-            console.log('validating input schema: ' + JSON.stringify(schema))
-            console.log('validating input data: ' + JSON.stringify(data))
+        try {                   
             for (key in data) { 
                 try {
                     data[key] = JSON.stringify(data[key]) 
                 } catch (err) {
-                    
-                }        
+                    console.log(`error building input: ${err}`)
+                }
             }
             var ajv = new Ajv({allErrors: true});
             var validator = ajv.compile(schema);
             var valid = data ? validator(data) : true;
-            if (!valid) {
-                console.log('11 input failed: ' + JSON.stringify(validator.errors))
-                var normalisedErrors = normalise(validator.errors);        
-                console.log('22 input failed: ' + JSON.stringify(normalisedErrors))
+            if (!valid) {                
+                var normalisedErrors = normaliseErrorMessages(validator.errors);                        
                 var badFields = normalisedErrors['fields']
                 resolve({errors: badFields});                                
             } else {            
@@ -226,7 +241,7 @@ module.exports.main = function main(event, context, callback) {
     .then(results => validateInput(event.body))  
     .then(inputValidation => {  
         if (inputValidation['errors']) {
-            var response = JSON.stringify(inputValidation['errors']);
+            var response = JSON.stringify({'response': '', 'errors': inputValidation['errors']});
             callback(null, {
                 statusCode: 400,
                 body: response,
