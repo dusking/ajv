@@ -2,7 +2,7 @@ var Ajv = require('ajv');
 var YAML = require('yamljs');
 var jsonlint = require("jsonlint");
 var yamlValidator = require('js-yaml');
-var normalise = require('ajv-error-messages');
+// var normalise = require('ajv-error-messages');
 
 
 function getJson(jsonObj) {
