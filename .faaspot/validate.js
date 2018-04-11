@@ -1,15 +1,16 @@
 var Ajv = require('ajv');
-var YAML = require('yamljs');
 var jsonlint = require("jsonlint");
-var yamlValidator = require('js-yaml');
-// var normalise = require('ajv-error-messages');
 
 
-function getJson(jsonObj) {
+function getJson(jsonObj, paramName) {
     if (typeof jsonObj === 'object') {
         return jsonObj
     } else {
-        return jsonlint.parse(jsonObj) ? JSON.parse(jsonObj) : null;
+        try {
+            return jsonlint.parse(jsonObj) ? JSON.parse(jsonObj) : null;
+        } catch (err) {                
+            throw {message: `failed to parse '${paramName}' json, ${err.message}`};
+        }   
     }
 }
 
@@ -17,11 +18,46 @@ function getYaml(yamlObj) {
     if (typeof yamlObj === 'object') {
         return yamlObj
     } else {        
+        var YAML = require('yamljs');
+        var yamlValidator = require('js-yaml');
         return yamlValidator.safeLoad(yamlObj) ? YAML.parse(yamlObj) : null;
     } 
 }
 
-function getSchemaData(body) {     
+function getSchemaData(body) {       
+    var schema = body.schema;
+    var data = body.data;        
+    var bad_input = '';
+    
+    if (!schema) { 
+        bad_input += "`schema`";
+    }
+    if (!data) { 
+        var base = bad_input ? `${bad_input} and ` : '';
+        bad_input = base + "`data`";
+    }
+    if (bad_input) {
+        throw {message: `missing required parameters ${bad_input.trim()}`}
+    }
+
+    // get `schema` parameter
+    if (typeof schema === "object" ) {            
+        schema = JSON.stringify(schema)                         
+    } 
+    schema = schema.trim();        
+    schema = getJson(schema, 'schema');         
+
+    // get `data` parameter
+    if (typeof data === "object" ) {            
+        data = JSON.stringify(data)                  
+    }
+    data = data.trim();
+    data = getJson(data, 'data');      
+    
+    return {schema: schema, data: data};
+}
+
+function OLDgetSchemaData(body) {     
     try {
         var status = '';
         var schema = body.schema;
@@ -29,12 +65,12 @@ function getSchemaData(body) {
         var schema_json_str = false;
         
         if (!schema) {
-            status = 'validate input';
-            throw {message: "missing schema"}
+            status = 'bad input';
+            throw {message: "missing required parameter `schema`"}
         }
         if (!data) {
-            status = 'validate input';
-            throw {message: "missing data"}
+            status = 'bad input';
+            throw {message: "missing required parameter `data`"}
         }
 
         if (typeof schema === "object" ) {            
@@ -68,7 +104,7 @@ function getSchemaData(body) {
             }      
         }          
     }  catch (err) {                
-        return {error: `${status} - ${err.message}`}
+        return {error: `${status}, ${err.message}`}
     }    
     
     return {schema: schema, data: data};
@@ -134,71 +170,70 @@ function getAvjObj(version) {
     return ajv;
 }
 
-function normaliseErrorMessages(errors) {
-    var fields = errors.reduce(
-        function (acc, e) {
-            var key = (e.dataPath.length == 0) ? e.keyword : e.dataPath.slice(1)            
-            if (key in acc) {
-                acc[key].push(e.message.toUpperCase()[0] + e.message.slice(1));
-            }
-            else {
-                acc[key] = [e.message.toUpperCase()[0] + e.message.slice(1)];
-            }            
-            return acc;
-        },
-        {}
-    );
+function normaliseErrorMessages(errors_obj) {
+    var errors = []
+    errors_obj.forEach(function(element) {
+        let message = '';        
+        if (element.keyword == "required") {            
+            message = element.message
+        } else if (element.keyword == "type") {
+            let key = element.dataPath.slice(1)
+            message = `'${key}' argument ${element.message}`
+        } else {
+            let key = element.dataPath.slice(1)
+            message = `'${key}' ${element.message}`
+        }
+        errors.push(message)
+    });
 
-    return fields;
+    return errors;
 }
 
 module.exports.validate = function validate(event, context) { 
     var eventBody = event.body;
     var eventQuery = event.query;    
-    var body = JSON.parse(eventBody);        
+    var body = JSON.parse(eventBody);    
+    var response = ''
+    var errors = '';    
+      
+    try {        
+        // retrieve the schema from the request        
+        var req = getSchemaData(body);    
+        var schema = req.schema;
+        var data = req.data;
+        var version = req.version || "latest"
+        console.log(`going to validate schema: ${JSON.stringify(schema)} \nwith data: ${JSON.stringify(data)}\n`);
 
-    // retrieve the schema from the request        
-    var req = getSchemaData(body);    
-    if (req.error) {
-        let response = `Input validation faild: ${req.error}`;
-        console.log(response)
+        var ajv = getAvjObj(version);  
+
+        // maybe if no data - just: ajv.validateSchema(schema)
+        // var validator = ajv.getSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+        // console.log(`${typeof validator}`)
+        var validator = ajv.compile(schema);
+        var valid = validator(data);
+
+        if (!valid) {
+            console.log(validator.errors)            
+            var normalisedErrors = normaliseErrorMessages(validator.errors);
+            errors = normalisedErrors;
+        }
+    }
+    catch (err) {        
+        response = JSON.stringify({result: 'bad request', error: err.message});
+        console.log(response);
         return {
-            statusCode: 400,
+            statusCode: 200,
             body: response,
             headers: { "Content-Type": "application/json" }
         };
     }
-    
-    var schema = req.schema;
-    var data = req.data;
-    var version = req.version || "latest"
-    console.log(`going to validate schema: ${JSON.stringify(schema)} \nwith data: ${JSON.stringify(data)}\n`);
 
-    var ajv = getAvjObj(version);
-    var response = '';
-    try {        
-        // maybe if no data - just: ajv.validateSchema(schema)
-        // var validator = ajv.getSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
-        // console.log(`${typeof validator}`)
-        var validator = ajv.compile(schema);        
-    
-        // if data wasn't supplied and schema compiled without exceptions - it's enougth (check the schema iteself)        
-        // var valid = data ? validator(data) : true;
-        var valid = validator(data);
-
-        if (!valid) {
-            console.log(validator.errors)
-            // var normalisedErrors = normalise(validator.errors);
-            var normalisedErrors = normaliseErrorMessages(validator.errors);
-            response = 'Invalid. errors: ' + JSON.stringify(normalisedErrors);                        
-        } else {            
-            response = 'Validated';
-        }
+    if (errors) {
+        response = JSON.stringify({result: 'data is invalid', validation_errors: errors});
+    }    
+    else {
+        response = JSON.stringify({result: 'data is valid'});
     }
-    catch (err) {
-        response = `Invalid schema. ${err.name}: ${err.message}`;
-    }
-
     console.log(response);
     return {
         statusCode: 200,

@@ -248,7 +248,7 @@ module.exports.main = function main(event, context, callback) {
                 headers: { "Content-Type": "application/json" }
             });    
         } else {
-            callback(null, validateModule.validate(event, context));              
+            callback(null, validateModule.validate(event, context));
         }        
     }).catch(err => {
         console.error('ERROR:', err);
