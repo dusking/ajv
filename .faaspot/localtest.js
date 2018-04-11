@@ -108,7 +108,37 @@ function test_bad_schema() {
     validateModule.validate(event, {});
 }
 
-test_bad_input_missing_data()
+function test_good_data_for_schema_4_bad_for_schema_6_testing_with_4() {
+    var jsonschema6 = '{"type": "object", "description": "Any validation failures are shown in the right-hand Messages pane.", "properties": {"foo": {"type": "number"}, "bar": {"contains": {"type": "integer"}, "type": "array", "maxItems": 3}}}';
+    var jsondata = '{ "foo": 12345, "bar": ["a", "b"] }';
+    var body = JSON.stringify({
+        'schema': jsonschema6,
+        'data': jsondata,
+        'draft': '4'    
+    });
+    var headers = {
+        'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
+    }
+    var event = { 'body': body, 'query': {} , 'headers': headers};
+    validateModule.validate(event, {});
+}
+
+function test_good_data_for_schema_4_bad_for_schema_6_testing_with_6() {
+    var jsonschema6 = '{"type": "object", "description": "Any validation failures are shown in the right-hand Messages pane.", "properties": {"foo": {"type": "number"}, "bar": {"contains": {"type": "integer"}, "type": "array", "maxItems": 3}}}';
+    var jsondata = '{ "foo": 12345, "bar": ["a", "b"] }';
+    var body = JSON.stringify({
+        'schema': jsonschema6,
+        'data': jsondata,
+        'draft': '6'    
+    });
+    var headers = {
+        'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
+    }
+    var event = { 'body': body, 'query': {} , 'headers': headers};
+    validateModule.validate(event, {});
+}
+
+// test_bad_input_missing_data()
 // test_bad_input_missing_schema()
 // test_bad_input_missing_data_and_schema()
 // test_good_data()
@@ -116,3 +146,5 @@ test_bad_input_missing_data()
 // test_bad_data_missing_multiple_params()
 // test_bad_data_bad_type_param()
 // test_bad_schema()
+// test_good_data_for_schema_4_bad_for_schema_6_testing_with_4()
+// test_good_data_for_schema_4_bad_for_schema_6_testing_with_6()

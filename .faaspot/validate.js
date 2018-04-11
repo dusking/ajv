@@ -26,7 +26,8 @@ function getYaml(yamlObj) {
 
 function getSchemaData(body) {       
     var schema = body.schema;
-    var data = body.data;        
+    var data = body.data;
+    var draft = body.draft;
     var bad_input = '';
     
     if (!schema) { 
@@ -38,6 +39,11 @@ function getSchemaData(body) {
     }
     if (bad_input) {
         throw {message: `missing required parameters ${bad_input.trim()}`}
+    }
+    if (draft) {
+        if (['4', '5', '6', '7'].indexOf(draft) < 0) {
+            throw {message: `schema draft can be one of: [4, 5, 6, 7]`}
+        }
     }
 
     // get `schema` parameter
@@ -54,7 +60,7 @@ function getSchemaData(body) {
     data = data.trim();
     data = getJson(data, 'data');      
     
-    return {schema: schema, data: data};
+    return {schema: schema, data: data, draft: draft};
 }
 
 function OLDgetSchemaData(body) {     
@@ -115,11 +121,12 @@ function getSchemaUri(draft) {
 }
 
 
-function getAvjObj(version) {
+function getAvjObj(draft) {
     // options, based on: https://github.com/epoberezkin/ajv#options    
     var options = {allErrors: true, schemaId: 'auto'};       
 
-    if (version == "4") {
+    if (draft == "4") {
+        console.log('using draft: 4')
         var ajv = new Ajv({
             schemaId: 'auto',
             meta: false, // optional, to prevent adding draft-06 meta-schema
@@ -139,7 +146,8 @@ function getAvjObj(version) {
           ajv.removeKeyword('propertyNames');
           ajv.removeKeyword('contains');
           ajv.removeKeyword('const');
-    } else if (version == "5") {
+    } else if (draft == "5") {
+        console.log('using draft: 5')
         var ajv = new Ajv({
             schemaId: 'auto',
             $data: true,
@@ -164,7 +172,7 @@ function getAvjObj(version) {
           // Optionally you can also disable propertyNames keyword defined in draft-06
           ajv.removeKeyword('propertyNames');
     } else {
-        console.log('using latest schema');
+        console.log('using latest schema draft');
         var ajv = new Ajv(options);
     }
     return ajv;
@@ -201,10 +209,10 @@ module.exports.validate = function validate(event, context) {
         var req = getSchemaData(body);    
         var schema = req.schema;
         var data = req.data;
-        var version = req.version || "latest"
-        console.log(`going to validate schema: ${JSON.stringify(schema)} \nwith data: ${JSON.stringify(data)}\n`);
+        var draft = req.draft || "latest"
+        console.log(`going to validate schema: ${JSON.stringify(schema)} \nwith data: ${JSON.stringify(data)}\draft: ${draft}`);
 
-        var ajv = getAvjObj(version);  
+        var ajv = getAvjObj(draft);  
 
         // maybe if no data - just: ajv.validateSchema(schema)
         // var validator = ajv.getSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
