@@ -2,12 +2,15 @@
 
 
 logo: 'https://www.themoviedb.org/assets/static_cache/2dceae11589334eecd61443249261daf/images/v4/logos/208x226-stacked-green.png'
-
+description: >
+    Ajv stands for Another JSON Schema Validator
+    The fastest JSON Schema validator.
+    Sooner or later, even with the most schemaless of architectures, you\u2019re going to need to validate some JSON passed to you by a user. And when that time comes, you\u2019ll want to use the fastest library out there.
 functions:
     validateSchema:
         runtime: nodejs8.3
         handler: wrapper.main
-        description: validate schema
+        description: Validate schema
         memory: 256
         timeout: 30                 
         properties:            
@@ -20,7 +23,7 @@ functions:
     validate:
         runtime: nodejs8.3
         handler: wrapper.main
-        description: validate schema
+        description: Validate data based on schema
         memory: 256
         timeout: 30                
         properties:            
