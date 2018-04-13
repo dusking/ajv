@@ -36,9 +36,40 @@ functions:
                 required: true              
                 minLength: 1                
                 maxLength: 1024
-        # oneOf:
-        #     - required:
-        #         jsonschema
-        #     - required:
-        #         yamlschema
+            draft:
+                description: Test json-schema draft to use (default is latest)
+                type: number                  
+                minimum: 4               
+                maximum: 7 
+        samples:
+            -   args: 
+                    data: 
+                        bar: 3
+                        foo: abc
+                    schema: 
+                        properties: 
+                            bar: 
+                                maximum: 3
+                                type: number
+                            foo: 
+                                type: string
+                    required: 
+                        - foo
+                        - bar
+                name: Good data sample
+            -   args: 
+                    data: 
+                        bar: xy
+                        foo: abc
+                    schema: 
+                        properties: 
+                            bar: 
+                                maximum: 3
+                                type: number
+                            foo: 
+                                type: string
+                    required: 
+                        - foo
+                        - bar
+                name: Bad data sample
             
