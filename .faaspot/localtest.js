@@ -138,6 +138,45 @@ function test_good_data_for_schema_4_bad_for_schema_6_testing_with_6() {
     validateModule.validate(event, {});
 }
 
+function test_good_schema_version() {
+    var jsonschema = '{"required": ["foo", "bar"], "properties":{"foo":{"type":"string"}, "bar":{"type":"number","maximum":3}}}';
+    var jsonschema6 = '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "id": "http://json-schema.org/draft-04/schema#", "description": "validation", "properties": {"foo": {"type": "number"}, "bar": {"contains": {"type": "integer"}, "type": "array", "maxItems": 3}}}';
+    var body = JSON.stringify({
+        'schema': jsonschema6,
+        'draft': '4'
+    });
+    var headers = {
+        'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
+    }
+    var event = { 'body': body, 'query': {} , 'headers': headers};
+    validateModule.validateSchema(event, {});
+}
+
+function test_bad_schema_version() {
+    var jsonschema6 = '{"type": "object", "$schema": "http://json-schema.org/draft-04/schema#", "id": "http://json-schema.org/draft-04/schema#", "description": "validation", "properties": {"foo": {"type": "number"}, "bar": {"contains": {"type": "integer"}, "type": "array", "maxItems": 3}}}';
+    var body = JSON.stringify({
+        'schema': jsonschema6,
+        'draft': '6'
+    });
+    var headers = {
+        'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
+    }
+    var event = { 'body': body, 'query': {} , 'headers': headers};
+    validateModule.validateSchema(event, {});
+}
+
+function test_bad_json_schema() {
+    var jsonschema = '{"required" ["foo", "bar"], "properties":{"foo":{"type":"string"}, "bar":{"type":"number","maximum":3}}}';
+    var body = JSON.stringify({
+        'schema': jsonschema     
+    });
+    var headers = {
+        'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
+    }
+    var event = { 'body': body, 'query': {} , 'headers': headers};
+    validateModule.validateSchema(event, {});
+}
+
 // test_bad_input_missing_data()
 // test_bad_input_missing_schema()
 // test_bad_input_missing_data_and_schema()
@@ -148,3 +187,7 @@ function test_good_data_for_schema_4_bad_for_schema_6_testing_with_6() {
 // test_bad_schema()
 // test_good_data_for_schema_4_bad_for_schema_6_testing_with_4()
 // test_good_data_for_schema_4_bad_for_schema_6_testing_with_6()
+
+// test_good_schema_version()
+test_bad_schema_version()
+// test_bad_json_schema()

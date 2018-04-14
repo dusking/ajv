@@ -32,7 +32,7 @@ function validateInput(body) {
     console.log('Going to validate input..')
 
     var schema = {
-        'required': ['schema', 'data'], 
+        'required': ['schema'], 
         'properties': {
             'schema': {
                 'description': 'The schema',
@@ -215,24 +215,64 @@ function getDocValue(context, userTokenInfo) {
     })    
 }
 
+
+function getAsJson(data) {
+    var jsonBody = data && data.trim()[0] == "{";
+    if (!jsonBody) {
+        console.log('data is not a json, but a query string parameters');
+        var parsedQueryBody = querystring.parse(data)
+        data = JSON.stringify(parsedQueryBody)
+        console.log('data: ' + event.body)     
+    } else {
+        console.log('data is already a json: ' + data)     
+    }
+    return data
+}
+
+
+module.exports.mainValidateSchema = function mainValidateSchema(event, context, callback) {       
+    console.log('event: ' + JSON.stringify(event))     
+    console.log('context: ' + JSON.stringify(context))     
+    console.log('body: ' + event.body)    
+
+    var client_ip = event['headers']['X-Forwarded-For'];    
+    event.body = getAsJson(event.body)
+
+    authenticateUser(event, context)
+    .then(userTokenInfo => getDocValue(context, userTokenInfo))    
+    .then(userEntity => createDocKeyIfNeeded(userEntity, context))
+    .then(userEntity => updateDocKey(context, userEntity))
+    .then(results => validateInput(event.body))  
+    .then(inputValidation => {  
+        if (inputValidation['errors']) {
+            var response = JSON.stringify({'response': '', 'errors': inputValidation['errors']});
+            callback(null, {
+                statusCode: 400,
+                body: response,
+                headers: { "Content-Type": "application/json" }
+            });    
+        } else {
+            callback(null, validateModule.validateSchema(event, context));
+        }        
+    }).catch(err => {
+        console.error('ERROR:', err);
+        var response = JSON.stringify({'result': 'Failed to execute function.. :/'});
+        callback(null, {
+            statusCode: 200,
+            body: response,
+            headers: { "Content-Type": "application/json" }
+        });
+    }) 
+}
+
+
 module.exports.main = function main(event, context, callback) {   
     console.log('event: ' + JSON.stringify(event))     
     console.log('context: ' + JSON.stringify(context))     
     console.log('body: ' + event.body)
 
     var client_ip = event['headers']['X-Forwarded-For'];
-
-    var jsonBody = event.body && event.body.trim()[0] == "{";
-    if (!jsonBody) {
-        console.log('data is not a json, but a query string parameters');
-        // convert body into json
-        querystring.parse(event.body);
-        var parsedQueryBody = querystring.parse(event.body)
-        event.body = JSON.stringify(parsedQueryBody)
-        console.log('event.body: ' + event.body)     
-    } else {
-        console.log('data is a json: ' + event.body)     
-    }
+    event.body = getAsJson(event.body)
 
     authenticateUser(event, context)
     .then(userTokenInfo => getDocValue(context, userTokenInfo))    

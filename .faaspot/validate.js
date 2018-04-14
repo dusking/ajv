@@ -24,6 +24,31 @@ function getYaml(yamlObj) {
     } 
 }
 
+function getSchema(body) {       
+    var schema = body.schema;    
+    var draft = body.draft;
+    var bad_input = '';
+    
+    if (!schema) { 
+        bad_input += "`schema`";
+    }
+    if (bad_input) {
+        throw {message: `missing required parameters ${bad_input.trim()}`}
+    }
+    if (draft) {
+        if (['4', '5', '6', '7'].indexOf(draft) < 0) {
+            throw {message: `schema draft can be one of: [4, 5, 6, 7]`}
+        }
+    }
+    if (typeof schema === "object" ) {            
+        schema = JSON.stringify(schema)                         
+    } 
+    schema = schema.trim();        
+    schema = getJson(schema, 'schema');         
+
+    return {schema: schema, draft: draft};
+}
+
 function getSchemaData(body) {       
     var schema = body.schema;
     var data = body.data;
@@ -196,6 +221,62 @@ function normaliseErrorMessages(errors_obj) {
 
     return errors;
 }
+
+
+module.exports.validateSchema = function validateSchema(event, context) { 
+    var eventBody = event.body;
+    var eventQuery = event.query;    
+    var body = JSON.parse(eventBody);    
+    var response = ''
+    var errors = '';    
+      
+    try {        
+        // retrieve the schema from the request        
+        var req = getSchema(body);    
+        var schema = req.schema;
+        var draft = req.draft || "latest"
+        console.log(`going to validate schema: ${JSON.stringify(schema)}, draft: ${draft}`);
+
+        var ajv = getAvjObj(draft);  
+
+        var valid = ajv.validateSchema(schema)
+
+        // maybe if no data - just: ajv.validateSchema(schema)
+        // var validator = ajv.getSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+        // console.log(`${typeof validator}`)
+        // var validator = ajv.compile(schema);
+        // var valid = validator(data);
+
+        if (!valid) {
+            console.log(validator.errors)            
+            var normalisedErrors = normaliseErrorMessages(validator.errors);
+            errors = normalisedErrors;
+        }
+    }
+    catch (err) {        
+        response = JSON.stringify({result: 'bad request', error: err.message});
+        console.log(response);
+        return {
+            statusCode: 200,
+            body: response,
+            headers: { "Content-Type": "application/json" }
+        };
+    }
+
+    if (errors) {
+        response = JSON.stringify({result: 'data is invalid', validation_errors: errors});
+    }    
+    else {
+        response = JSON.stringify({result: 'data is valid'});
+    }
+    console.log(response);
+    return {
+        statusCode: 200,
+        body: response,
+        headers: { "Content-Type": "application/json" }
+    };
+}
+
 
 module.exports.validate = function validate(event, context) { 
     var eventBody = event.body;

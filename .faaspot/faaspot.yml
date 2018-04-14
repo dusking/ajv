@@ -3,14 +3,16 @@
 
 logo: 'https://www.themoviedb.org/assets/static_cache/2dceae11589334eecd61443249261daf/images/v4/logos/208x226-stacked-green.png'
 description: >
-    Ajv stands for Another JSON Schema Validator
-    The fastest JSON Schema validator.
-    Sooner or later, even with the most schemaless of architectures, you\u2019re going to need to validate some JSON passed to you by a user. And when that time comes, you\u2019ll want to use the fastest library out there.
+    Ajv stands for Another JSON Schema Validator\n
+    The fastest JSON Schema validator.\n
+    Sooner or later, even with the most schemaless of architectures, 
+    you're going to need to validate some JSON passed to you by a user. 
+    And when that time comes, you'll want to use the fastest library out there.
 functions:
     validateSchema:
         runtime: nodejs8.3
-        handler: wrapper.main
-        description: Validate schema
+        handler: wrapper.mainValidateSchema
+        description: Validate schema propriety
         memory: 256
         timeout: 30                 
         properties:            
@@ -20,6 +22,38 @@ functions:
                 required: true              
                 minLength: 1                
                 maxLength: 1024
+            draft:
+                description: Test json-schema draft to use (default is latest)
+                type: number                  
+                minimum: 4               
+                maximum: 7
+        samples:
+            -   args: 
+                    schema: 
+                        type: object
+                        $schema: http://json-schema.org/draft-04/schema#
+                        id: http://json-schema.org/draft-04/schema#
+                        properties: 
+                            bar: 
+                                maximum: 3
+                                type: number
+                            foo: 
+                                type: string
+                    draft: 4                                    
+                name: Good schema sample
+            -   args: 
+                    schema: 
+                        type: object
+                        $schema: http://json-schema.org/draft-04/schema#
+                        id: http://json-schema.org/draft-04/schema#
+                        properties: 
+                            bar: 
+                                maximum: 3
+                                type: number
+                            foo: 
+                                type: string
+                    draft: 6                                            
+                name: Bad schema version sample
     validate:
         runtime: nodejs8.3
         handler: wrapper.main
@@ -56,9 +90,9 @@ functions:
                                 type: number
                             foo: 
                                 type: string
-                    required: 
-                        - foo
-                        - bar
+                        required: 
+                            - foo
+                            - bar
                 name: Good data sample
             -   args: 
                     data: 
@@ -71,8 +105,8 @@ functions:
                                 type: number
                             foo: 
                                 type: string
-                    required: 
-                        - foo
-                        - bar
+                        required: 
+                            - foo
+                            - bar
                 name: Bad data sample
             
