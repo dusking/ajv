@@ -109,4 +109,21 @@ functions:
                             - foo
                             - bar
                 name: Bad data sample
+            -   args: 
+                    data: 
+                        bar: 
+                            - a
+                            - b
+                        foo: 12
+                    draft: 6
+                    schema: 
+                        properties: 
+                            bar: 
+                                type: array
+                                maxItems: 3
+                                contains:
+                                    type: integer                                                                    
+                            foo: 
+                                type: number
+                name: Bad input since draft-06
             
