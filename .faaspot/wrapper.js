@@ -216,13 +216,13 @@ function getDocValue(context, userTokenInfo) {
 }
 
 
-function getAsJson(data) {
+function getAsJson(data) {    
     var jsonBody = data && data.trim()[0] == "{";
     if (!jsonBody) {
         console.log('data is not a json, but a query string parameters');
         var parsedQueryBody = querystring.parse(data)
         data = JSON.stringify(parsedQueryBody)
-        console.log('data: ' + event.body)     
+        console.log('data: ' + data)     
     } else {
         console.log('data is already a json: ' + data)     
     }
@@ -266,7 +266,7 @@ module.exports.mainValidateSchema = function mainValidateSchema(event, context, 
 }
 
 
-module.exports.main = function main(event, context, callback) {   
+module.exports.main = function main(event, context, callback) {       
     console.log('event: ' + JSON.stringify(event))     
     console.log('context: ' + JSON.stringify(context))     
     console.log('body: ' + event.body)

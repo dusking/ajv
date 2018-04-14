@@ -278,9 +278,25 @@ module.exports.validateSchema = function validateSchema(event, context) {
 }
 
 
+// function getAsJson(data) {    
+//     var jsonBody = data && data.trim()[0] == "{";
+//     if (!jsonBody) {
+//         const querystring = require('querystring');
+//         console.log('data is not a json, but a query string parameters');
+//         var parsedQueryBody = querystring.parse(data)
+//         data = JSON.stringify(parsedQueryBody)
+//         console.log('data: ' + data)     
+//     } else {
+//         console.log('data is already a json: ' + data)     
+//     }
+//     return data
+// }
+
+
 module.exports.validate = function validate(event, context) { 
     var eventBody = event.body;
-    var eventQuery = event.query;    
+    var eventQuery = event.query; 
+    // eventBody = getAsJson(event.body)
     var body = JSON.parse(eventBody);    
     var response = ''
     var errors = '';    
