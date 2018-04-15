@@ -1,4 +1,5 @@
 var crypto = require('crypto');
+var request = require('request');
 var basicAuth = require('basic-auth')
 var assert = require('assert');
 const rp = require('request-promise')
@@ -8,6 +9,19 @@ const querystring = require('querystring');
 const moment = require('moment');
 
 var validateModule = require("./validate.js");
+
+function update_usage(name, clientIP, functionId, functionName) {    
+    var headers = {"Content-Type":"application/json","Token":"Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d"};
+    var body = {"user_id": name, 'source_ip': clientIP, 'function_id': functionId, 'function_name': functionName};
+    var options = {
+        url: 'https://us-central1-faaspotit.cloudfunctions.net/google-bigquery',
+        method: 'POST',
+        json: true,
+        headers: headers,
+        body: body
+    };
+    request(options);
+}
 
 function normaliseErrorMessages(errors) {
     var fields = errors.reduce(
@@ -96,6 +110,12 @@ function authenticateUser(event, context) {
             console.log('Authorization decrypted user: ' + JSON.stringify(user));
             name = user['name']
             
+            var uri = event.uri.split('/');
+            var functionName = uri[uri.length - 1];
+            var functionId = context['functionId']
+            var clientIP = event['headers']['X-Forwarded-For'];
+            update_usage(name, clientIP, functionId, functionName);
+
             resolve({'userId': name});                 
         }
         catch(err) {     
