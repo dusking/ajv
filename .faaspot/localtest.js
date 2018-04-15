@@ -52,6 +52,21 @@ function test_good_data() {
     validateModule.validate(event, {});
 }
 
+function test_draft_5() {
+    var jsonschema = '{"required": ["foo", "bar"], "properties":{"foo":{"type":"string"}, "bar":{"type":"number","maximum":3}}}';
+    var jsondata = '{ "foo": "abc", "bar": 3 }';
+    var body = JSON.stringify({
+        'schema': jsonschema,
+        'data': jsondata,
+        'draft': "5"     
+    });
+    var headers = {
+        'Authorization': 'Basic 62646018047677d2f204ffae7dac388bc4cb227d963b729d'    
+    }
+    var event = { 'body': body, 'query': {} , 'headers': headers};
+    validateModule.validate(event, {});
+}
+
 function test_bad_data_missing_param() {
     var jsonschema = '{"required": ["foo", "bar"], "properties":{"foo":{"type":"string"}, "bar":{"type":"number","maximum":3}}}';
     var jsondata = '{"bar": 3 }';
@@ -193,6 +208,7 @@ function test_bad_json_schema() {
 // test_bad_input_missing_schema()
 // test_bad_input_missing_data_and_schema()
 // test_good_data()
+test_draft_5()
 // test_bad_data_missing_param()
 // test_bad_data_missing_multiple_params()
 // test_bad_data_bad_type_param()

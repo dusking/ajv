@@ -36,8 +36,8 @@ function getSchema(body) {
         throw {message: `missing required parameters ${bad_input.trim()}`}
     }
     if (draft) {
-        if (['4', '5', '6', '7'].indexOf(draft) < 0) {
-            throw {message: `schema draft can be one of: [4, 5, 6, 7]`}
+        if (['4', '6', '7'].indexOf(draft) < 0) {
+            throw {message: `schema draft can be one of: [4, 6, 7]`}
         }
     }
     if (typeof schema === "object" ) {            
@@ -66,8 +66,8 @@ function getSchemaData(body) {
         throw {message: `missing required parameters ${bad_input.trim()}`}
     }
     if (draft) {
-        if (['4', '5', '6', '7'].indexOf(draft) < 0) {
-            throw {message: `schema draft can be one of: [4, 5, 6, 7]`}
+        if (['4', '6', '7'].indexOf(draft) < 0) {
+            throw {message: `schema draft can be one of: [4, 6, 7]`}
         }
     }
 

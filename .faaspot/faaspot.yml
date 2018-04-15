@@ -24,9 +24,11 @@ functions:
                 maxLength: 1024
             draft:
                 description: Test json-schema draft to use (default is latest)
-                type: number                  
-                minimum: 4               
-                maximum: 7
+                type: string                  
+                enum: 
+                    - 4
+                    - 6
+                    - 7  
         samples:
             -   args: 
                     schema: 
@@ -75,9 +77,11 @@ functions:
                 maxLength: 1024
             draft:
                 description: Test json-schema draft to use (default is latest)
-                type: number                  
-                minimum: 4               
-                maximum: 7 
+                type: string                  
+                enum: 
+                    - 4
+                    - 6
+                    - 7                      
         samples:
             -   args: 
                     data: 
