@@ -89,11 +89,11 @@ function validateInput(body) {
 }
 
 function decrypt(text){
-    var algorithm = 'aes-256-ctr';
-    var password = 'qM7Pjn6F';
-    var decipher = crypto.createDecipher(algorithm, password)
-    var dec = decipher.update(text,'hex','utf8')
-    dec += decipher.final('utf8');
+    let algorithm = 'aes256';
+    var key = 'WmFKzhC3YRmEU4dPY3hza8HUu7653Gg3';
+    var iv = 'ZS9ATh5Wz4jUN895';
+    var decipher = crypto.createDecipheriv(algorithm, key, iv)
+    var dec = decipher.update(text,'hex','utf8') + decipher.final('utf8');
     return dec;
 }
 
